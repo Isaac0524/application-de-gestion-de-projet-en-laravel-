@@ -45,8 +45,26 @@ class ProjectController extends Controller
         $startDate = Carbon::parse($data['start_date']);
         $data['status'] = $startDate->isToday() ? 'in_progress' : 'pending';
 
-        $project = Project::create($data);
-        return redirect()->route('projects.show',$project)->with('ok','Projet créé');
+        // Wrap in transaction: create project -> create team linked to project
+        \DB::beginTransaction();
+        try {
+            $project = Project::create($data);
+
+            // Create a team for this project
+            $team = \App\Models\Team::create([
+                'name' => 'Team - ' . $project->title,
+                'description' => 'Équipe automatique pour le projet: ' . $project->title,
+                'project_id' => $project->id
+            ]);
+
+            \DB::commit();
+
+            return redirect()->route('projects.show',$project)->with('ok','Projet créé et équipe générée');
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Erreur lors de la création du projet et de l\'équipe', ['error'=>$e->getMessage()]);
+            return back()->with('error','Erreur lors de la création du projet');
+        }
     }
 
     public function show(Project $project, Request $request)

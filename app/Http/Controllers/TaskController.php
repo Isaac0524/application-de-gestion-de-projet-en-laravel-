@@ -47,6 +47,16 @@ class TaskController extends Controller
         $task = $activity->tasks()->create($data);
         if (!empty($data['assignees'])) $task->assignees()->sync($data['assignees']);
 
+        // If the project has a team, add assignees to that team
+        try {
+            $project = $activity->project;
+            if ($project && $project->team && !empty($data['assignees'])) {
+                $project->team->users()->syncWithoutDetaching($data['assignees']);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Impossible d\'attacher les utilisateurs à l\'équipe du projet', ['error'=>$e->getMessage()]);
+        }
+
         // Refresh activity status automatically
         $this->refreshActivityStatus($activity);
 
@@ -95,6 +105,17 @@ class TaskController extends Controller
 
         $task->update($data);
         $task->assignees()->sync($data['assignees'] ?? []);
+
+        // If the project has a team, add assignees to that team
+        try {
+            $project = $activity->project;
+            $assignees = $data['assignees'] ?? [];
+            if ($project && $project->team && !empty($assignees)) {
+                $project->team->users()->syncWithoutDetaching($assignees);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Impossible d\'attacher les utilisateurs à l\'équipe du projet (update)', ['error'=>$e->getMessage()]);
+        }
 
         // Refresh activity status automatically
         $this->refreshActivityStatus($activity);

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Project extends Model
 {
@@ -22,6 +23,14 @@ class Project extends Model
     public function tasks()
     {
         return $this->hasManyThrough(Task::class, Activity::class, 'project_id', 'activity_id');
+    }
+
+    /**
+     * Projet possède une équipe
+     */
+    public function team(): HasOne
+    {
+        return $this->hasOne(\App\Models\Team::class);
     }
 
     /**

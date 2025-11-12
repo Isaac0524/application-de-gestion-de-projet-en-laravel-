@@ -29,5 +29,12 @@ class DatabaseSeeder extends Seeder
             'role' => 'manager',
             'email_verified_at' => now(),
         ]);
+        User::create([
+            'name' => 'Administrateur',
+            'email' => 'admin01@pm-app.com',
+            'password' => Hash::make('@admin01'),
+            'role' => 'admin',
+            'email_verified_at' => now(),
+        ]);
     }
 }

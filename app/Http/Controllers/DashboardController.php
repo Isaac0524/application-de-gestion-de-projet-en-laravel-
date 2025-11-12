@@ -40,6 +40,7 @@ class DashboardController extends Controller
         $projectsKanban = [];
         $recentActivities = [];
         $upcomingDeadlines = [];
+        $alerts = [];
 
         if ($user->isManager()) {
             // Statistiques générales
