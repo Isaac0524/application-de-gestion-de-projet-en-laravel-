@@ -37,7 +37,7 @@ class ChatController extends Controller
 
         try {
             // Check if message starts with a command
-            if (strpos($message, ';') === 0) {
+            if (strpos($message, '/') === 0) {
                 return $this->handleCommand($message);
             }
 
@@ -58,7 +58,7 @@ class ChatController extends Controller
     }
 
     /**
-     * Handle command-based messages (starting with ;)
+     * Handle command-based messages (starting with /)
      */
     protected function handleCommand(string $message)
     {
@@ -67,17 +67,21 @@ class ChatController extends Controller
         $parameters = $parts[1] ?? '';
 
         switch ($command) {
-            case ';help':
+            case '/help':
                 return $this->showHelp();
-            case ';create-activity':
-                return $this->createActivityCommand($parameters);
-            case ';list-projects':
+            case '/create-project':
+                return $this->createProjectCommand($parameters);
+            case '/list-projects':
                 return $this->listProjectsCommand();
-            case ';project-status':
+            case '/project-status':
                 return $this->projectStatusCommand($parameters);
             default:
                 return response()->json([
-                    'reply' => "Commande inconnue : {$command}. Utilisez ;help pour voir la liste des commandes disponibles."
+                    'reply' => $this->formatMessage([
+                        'type' => 'error',
+                        'content' => "Commande inconnue : <strong>{$command}</strong>",
+                        'footer' => "Utilisez <code>/help</code> pour voir les commandes disponibles"
+                    ])
                 ]);
         }
     }
@@ -114,29 +118,13 @@ class ChatController extends Controller
             ]);
 
             return response()->json([
-                'reply' => 'Je n\'ai pas pu traiter votre demande. Utilisez ;help pour voir les commandes disponibles.'
+                'reply' => $this->formatMessage([
+                    'type' => 'error',
+                    'content' => "Je n'ai pas pu traiter votre demande.",
+                    'footer' => "Utilisez <code>/help</code> pour voir les commandes disponibles"
+                ])
             ]);
         }
-    }
-
-    /**
-     * Check if message is requesting activity creation
-     */
-    protected function isActivityCreationRequest(string $message): bool
-    {
-        $keywords = [
-            'crée', 'créer', 'create', 'nouvelle activité', 'new activity',
-            'ajoute', 'ajouter', 'add activity', 'activité pour'
-        ];
-
-        $lowerMessage = strtolower($message);
-        foreach ($keywords as $keyword) {
-            if (strpos($lowerMessage, $keyword) !== false) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -174,7 +162,12 @@ class ChatController extends Controller
             strpos($lowerMessage, 'hello') !== false || strpos($lowerMessage, 'hi') !== false ||
             strpos($lowerMessage, 'hey') !== false || strpos($lowerMessage, 'coucou') !== false) {
             return response()->json([
-                'reply' => 'Bonjour ! 👋 Je suis votre assistant IA pour la gestion de projets. Comment puis-je vous aider aujourd\'hui ?'
+                'reply' => $this->formatMessage([
+                    'type' => 'greeting',
+                    'icon' => '👋',
+                    'content' => "Bonjour ! Je suis votre assistant IA pour la gestion de projets.",
+                    'footer' => "Tapez <code>/help</code> pour découvrir les commandes disponibles"
+                ])
             ]);
         }
 
@@ -182,7 +175,12 @@ class ChatController extends Controller
         if (strpos($lowerMessage, 'ça va') !== false || strpos($lowerMessage, 'comment ça va') !== false ||
             strpos($lowerMessage, 'how are you') !== false || strpos($lowerMessage, 'comment vas-tu') !== false) {
             return response()->json([
-                'reply' => 'Je vais très bien, merci ! 😊 Je suis prêt à vous aider avec vos projets. Que souhaitez-vous faire ?'
+                'reply' => $this->formatMessage([
+                    'type' => 'info',
+                    'icon' => '😊',
+                    'content' => "Je vais très bien, merci ! Je suis prêt à vous aider avec vos projets.",
+                    'footer' => "Que souhaitez-vous faire ?"
+                ])
             ]);
         }
 
@@ -190,7 +188,11 @@ class ChatController extends Controller
         if (strpos($lowerMessage, 'merci') !== false || strpos($lowerMessage, 'thanks') !== false ||
             strpos($lowerMessage, 'thank you') !== false) {
             return response()->json([
-                'reply' => 'De rien ! 😊 N\'hésitez pas si vous avez besoin d\'aide avec vos projets.'
+                'reply' => $this->formatMessage([
+                    'type' => 'info',
+                    'icon' => '😊',
+                    'content' => "De rien ! N'hésitez pas si vous avez besoin d'aide avec vos projets."
+                ])
             ]);
         }
 
@@ -199,162 +201,34 @@ class ChatController extends Controller
             strpos($lowerMessage, 'bonne journée') !== false || strpos($lowerMessage, 'à bientôt') !== false ||
             strpos($lowerMessage, 'see you') !== false) {
             return response()->json([
-                'reply' => 'Au revoir ! 👋 Passez une excellente journée. À bientôt !'
+                'reply' => $this->formatMessage([
+                    'type' => 'info',
+                    'icon' => '👋',
+                    'content' => "Au revoir ! Passez une excellente journée. À bientôt !"
+                ])
             ]);
         }
 
         // Nice to meet you
         if (strpos($lowerMessage, 'enchanté') !== false || strpos($lowerMessage, 'nice to meet you') !== false) {
             return response()->json([
-                'reply' => 'Enchanté également ! 🤝 Je suis ravi de vous aider avec vos projets de gestion.'
+                'reply' => $this->formatMessage([
+                    'type' => 'info',
+                    'icon' => '🤝',
+                    'content' => "Enchanté également ! Je suis ravi de vous aider avec vos projets de gestion."
+                ])
             ]);
         }
 
         // Default casual response
         return response()->json([
-            'reply' => 'Ravi de discuter avec vous ! 💬 Je suis là pour vous aider avec la gestion de vos projets. Que puis-je faire pour vous ?'
+            'reply' => $this->formatMessage([
+                'type' => 'info',
+                'icon' => '💬',
+                'content' => "Ravi de discuter avec vous ! Je suis là pour vous aider avec la gestion de vos projets.",
+                'footer' => "Que puis-je faire pour vous ?"
+            ])
         ]);
-    }
-
-    /**
-     * Handle activity creation from natural language
-     */
-    protected function handleActivityCreation(string $message)
-    {
-        // Extract project information if mentioned
-        $projectId = $this->extractProjectFromMessage($message);
-
-        if (!$projectId) {
-            return response()->json([
-                'reply' => 'Pour créer une activité, veuillez spécifier le projet. Exemple: "Crée une activité de développement pour le projet Site Web"'
-            ]);
-        }
-
-        // Verify user has access to the project
-        $project = Project::find($projectId);
-        if (!$project) {
-            return response()->json([
-                'reply' => 'Projet non trouvé.'
-            ]);
-        }
-
-        $this->authorize('manager', $project);
-
-        // Use Gemini to extract activity details from the message
-        $activityData = $this->extractActivityData($message, $project);
-
-        if (!$activityData) {
-            return response()->json([
-                'reply' => 'Je n\'ai pas pu extraire les informations nécessaires. Veuillez utiliser le format: "Crée une activité [nom] pour le projet [nom du projet]"'
-            ]);
-        }
-
-        try {
-            // Create the activity
-            $activity = Activity::create([
-                'title' => $activityData['title'],
-                'description' => $activityData['description'],
-                'project_id' => $project->id,
-                'status' => 'in_progress',
-                'due_date' => $project->due_date
-            ]);
-
-            // Create tasks if provided
-            if (!empty($activityData['tasks'])) {
-                foreach ($activityData['tasks'] as $taskData) {
-                    Task::create([
-                        'title' => $taskData['title'],
-                        'description' => $taskData['description'] ?? '',
-                        'activity_id' => $activity->id,
-                        'priority' => $taskData['priority'] ?? 'medium',
-                        'status' => 'pending',
-                        'estimated_hours' => $taskData['estimated_hours'] ?? null,
-                        'due_date' => $project->due_date
-                    ]);
-                }
-            }
-
-            $taskCount = count($activityData['tasks'] ?? []);
-            $reply = "✅ Activité créée avec succès : **{$activity->title}**\n";
-            $reply .= "📋 Projet: {$project->title}\n";
-            if ($taskCount > 0) {
-                $reply .= "📝 {$taskCount} tâche(s) créée(s)";
-
-                return response()->json([
-                    'reply' => $reply,
-                    'activity' => $activity,
-                    'project' => $project
-                ]);
-            }
-
-        } catch (Exception $e) {
-            Log::error('Activity creation failed', [
-                'message' => $message,
-                'project_id' => $projectId,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'reply' => 'Erreur lors de la création de l\'activité. Veuillez réessayer.'
-            ], 500);
-        }
-    }
-
-    /**
-     * Extract project ID from message
-     */
-    protected function extractProjectFromMessage(string $message): ?int
-    {
-        // Look for project mentions in the message
-        $projects = Project::where('owner_id', auth()->id())->get();
-
-        foreach ($projects as $project) {
-            if (strpos(strtolower($message), strtolower($project->title)) !== false) {
-                return $project->id;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Use Gemini to extract activity data from natural language
-     */
-    protected function extractActivityData(string $message, Project $project): ?array
-    {
-        $prompt = "Extrait les informations d'activité suivantes de ce message utilisateur. Réponds uniquement en JSON:
-
-Message: \"{$message}\"
-
-Format de réponse JSON:
-{
-    \"title\": \"nom de l'activité\",
-    \"description\": \"description de l'activité\",
-    \"tasks\": [
-        {
-            \"title\": \"nom de la tâche\",
-            \"description\": \"description de la tâche\",
-            \"priority\": \"high|medium|low\",
-            \"estimated_hours\": 4
-        }
-    ]
-}";
-
-        try {
-            $response = $this->geminiService->chat($prompt);
-            $parsed = json_decode($response, true);
-
-            if (json_last_error() === JSON_ERROR_NONE && isset($parsed['title'])) {
-                return $parsed;
-            }
-        } catch (Exception $e) {
-            Log::error('Activity data extraction failed', [
-                'message' => $message,
-                'error' => $e->getMessage()
-            ]);
-        }
-
-        return null;
     }
 
     /**
@@ -362,38 +236,199 @@ Format de réponse JSON:
      */
     protected function showHelp()
     {
-        $helpText = "**🤖 Commandes disponibles :**\n\n";
-        $helpText .= "** Gestion des activités :**\n";
-        $helpText .= "• `;create-activity [nom]` - Créer une nouvelle activité\n";
-        $helpText .= "• `;list-projects` - Lister tous vos projets\n";
-        $helpText .= "• `;project-status [nom]` - Voir le statut d'un projet\n\n";
-        $helpText .= "** Conversation naturelle :**\n";
-        $helpText .= "• Dites simplement \"Crée une activité de développement pour le projet Site Web\"\n";
-        $helpText .= "• \"Ajoute une tâche de design au projet Mobile App\"\n\n";
-        $helpText .= "**Exemples :**\n";
-        $helpText .= "• \"Crée une activité de développement frontend pour le projet E-commerce\"\n";
-        $helpText .= "• `;create-activity Développement API`\n";
+        $helpContent = '
+            <div class="ai-help-container">
+                <div class="ai-help-header">
+                    <span class="ai-help-icon">📚</span>
+                    <h4>Commandes disponibles</h4>
+                </div>
+                
+                <div class="ai-help-section">
+                    <div class="ai-help-section-title">
+                        <span class="icon">🎯</span>
+                        <strong>Gestion des projets</strong>
+                    </div>
+                    <div class=\"ai-help-commands\">
+                        <div class=\"ai-help-command\">
+                            <code>/create-project [titre] | [description] | [date_debut] | [date_fin]</code>
+                            <span>Créer un nouveau projet</span>
+                        </div>
+                        <div class=\"ai-help-command\">
+                            <code>/list-projects</code>
+                            <span>Lister tous vos projets</span>
+                        </div>
+                        <div class=\"ai-help-command\">
+                            <code>/project-status [nom]</code>
+                            <span>Voir le statut du projet</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        ';
 
         return response()->json([
-            'reply' => $helpText
+            'reply' => $helpContent,
+            'isFormatted' => true
         ]);
     }
 
     /**
-     * Create activity via command
+     * Create a new project from command
      */
-    protected function createActivityCommand(string $parameters)
+    protected function createProjectCommand(string $parameters)
     {
         if (empty(trim($parameters))) {
             return response()->json([
-                'reply' => "Usage: ;create-activity [nom de l'activité]\nExemple: ;create-activity Développement Frontend"
+                'reply' => $this->formatMessage([
+                    'type' => 'error',
+                    'content' => "Veuillez spécifier les détails du projet",
+                    'footer' => "Usage : <code>/create-project [titre] | [description] | [date_debut] | [date_fin]</code><br><em>Format des dates : YYYY-MM-DD</em>"
+                ])
             ]);
         }
 
-        // For now, just acknowledge - full implementation would need project context
-        return response()->json([
-            'reply' => "Pour créer une activité, veuillez spécifier le projet dans votre message.\nExemple: \"Crée une activité {$parameters} pour le projet [nom du projet]\""
-        ]);
+        try {
+            // Parse parameters separated by |
+            $parts = array_map('trim', explode('|', $parameters));
+            
+            $title = $parts[0] ?? null;
+            $description = $parts[1] ?? null;
+            $startDate = $parts[2] ?? null;
+            $endDate = $parts[3] ?? null;
+
+            // Validate title
+            if (!$title) {
+                return response()->json([
+                    'reply' => $this->formatMessage([
+                        'type' => 'error',
+                        'content' => "Le titre du projet est obligatoire"
+                    ])
+                ]);
+            }
+
+            // Check if project already exists
+            if (Project::where('title', $title)->exists()) {
+                return response()->json([
+                    'reply' => $this->formatMessage([
+                        'type' => 'error',
+                        'content' => "Un projet avec ce nom existe deja : <strong>" . htmlspecialchars($title) . "</strong>"
+                    ])
+                ]);
+            }
+
+            // Set default dates if not provided
+            if (!$startDate) {
+                $startDate = now()->toDateString();
+            }
+            if (!$endDate) {
+                $endDate = now()->addDays(30)->toDateString();
+            }
+
+            // Validate date format
+            try {
+                $startDateParsed = \Carbon\Carbon::createFromFormat('Y-m-d', $startDate);
+                $endDateParsed = \Carbon\Carbon::createFromFormat('Y-m-d', $endDate);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'reply' => $this->formatMessage([
+                        'type' => 'error',
+                        'content' => "Format de date invalide",
+                        'footer' => "Utilisez le format YYYY-MM-DD (ex: 2025-12-25)"
+                    ])
+                ]);
+            }
+
+            // Validate date logic
+            if ($startDateParsed > $endDateParsed) {
+                return response()->json([
+                    'reply' => $this->formatMessage([
+                        'type' => 'error',
+                        'content' => "La date de fin doit etre apres la date de debut"
+                    ])
+                ]);
+            }
+
+            // Create project with transaction
+            \DB::beginTransaction();
+            try {
+                $project = Project::create([
+                    'title' => $title,
+                    'description' => $description,
+                    'owner_id' => auth()->id(),
+                    'status' => $startDateParsed->isToday() || $startDateParsed->isPast() ? 'in_progress' : 'pending',
+                    'start_date' => $startDate,
+                    'due_date' => $endDate
+                ]);
+
+                // Create associated team
+                $team = \App\Models\Team::create([
+                    'name' => 'Team - ' . $project->title,
+                    'description' => 'Equipe automatique pour le projet: ' . $project->title,
+                    'project_id' => $project->id
+                ]);
+
+                \DB::commit();
+
+                $successContent = '
+                    <div class="ai-project-created">
+                        <div class="ai-created-header">
+                            <span class="icon">✅</span>
+                            <strong>Projet cree avec succes !</strong>
+                        </div>
+                        <div class="ai-created-details">
+                            <div class="ai-created-item">
+                                <span class="label">Titre</span>
+                                <span class="value">' . htmlspecialchars($title) . '</span>
+                            </div>
+                            <div class="ai-created-item">
+                                <span class="label">Statut</span>
+                                <span class="value">' . ($startDateParsed->isToday() || $startDateParsed->isPast() ? 'En cours' : 'En attente') . '</span>
+                            </div>
+                            <div class="ai-created-item">
+                                <span class="label">Debut</span>
+                                <span class="value">' . $startDateParsed->format('d/m/Y') . '</span>
+                            </div>
+                            <div class="ai-created-item">
+                                <span class="label">Fin prevue</span>
+                                <span class="value">' . $endDateParsed->format('d/m/Y') . '</span>
+                            </div>
+                            <div class="ai-created-item">
+                                <span class="label">Equipe</span>
+                                <span class="value">' . htmlspecialchars($team->name) . '</span>
+                            </div>
+                        </div>
+                    </div>
+                ';
+
+                return response()->json([
+                    'reply' => $successContent,
+                    'isFormatted' => true,
+                    'project' => [
+                        'id' => $project->id,
+                        'title' => $project->title,
+                        'status' => $project->status
+                    ]
+                ]);
+
+            } catch (\Exception $e) {
+                \DB::rollBack();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error('ChatController::createProjectCommand error', [
+                'parameters' => $parameters,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'reply' => $this->formatMessage([
+                    'type' => 'error',
+                    'content' => "Erreur lors de la creation du projet",
+                    'footer' => "Detail : " . $e->getMessage()
+                ])
+            ]);
+        }
     }
 
     /**
@@ -405,22 +440,50 @@ Format de réponse JSON:
 
         if ($projects->isEmpty()) {
             return response()->json([
-                'reply' => "Aucun projet trouvé. Créez d'abord un projet."
+                'reply' => $this->formatMessage([
+                    'type' => 'info',
+                    'icon' => '📋',
+                    'content' => "Aucun projet trouvé. Créez d'abord un projet."
+                ])
             ]);
         }
 
-        $list = "**📋 Vos projets :**\n";
+        $projectsList = '<div class="ai-projects-list">';
+        $projectsList .= '<div class="ai-list-header"><span class="icon">📋</span><strong>Vos projets</strong></div>';
+        
         foreach ($projects as $project) {
             $activityCount = $project->activities->count();
             $completedTasks = $project->activities->sum(fn($a) => $a->tasks->whereIn('status', ['completed', 'finalized'])->count());
             $totalTasks = $project->activities->sum(fn($a) => $a->tasks->count());
             $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
 
-            $list .= "• **{$project->title}** ({$project->status}) - {$activityCount} activités, {$progress}% terminé\n";
+            $statusIcon = match($project->status) {
+                'completed' => '✅',
+                'in_progress' => '🔄',
+                'pending' => '⏳',
+                default => '📌'
+            };
+
+            $projectsList .= '
+                <div class="ai-project-item">
+                    <div class="ai-project-header">
+                        <span class="status-icon">' . $statusIcon . '</span>
+                        <strong>' . htmlspecialchars($project->title) . '</strong>
+                    </div>
+                    <div class="ai-project-stats">
+                        <span class="stat"><span class="icon">📊</span>' . $activityCount . ' activités</span>
+                        <span class="stat"><span class="icon">✓</span>' . $completedTasks . '/' . $totalTasks . ' tâches</span>
+                        <span class="stat"><span class="icon">📈</span>' . $progress . '%</span>
+                    </div>
+                </div>
+            ';
         }
+        
+        $projectsList .= '</div>';
 
         return response()->json([
-            'reply' => $list
+            'reply' => $projectsList,
+            'isFormatted' => true
         ]);
     }
 
@@ -431,7 +494,11 @@ Format de réponse JSON:
     {
         if (empty(trim($parameters))) {
             return response()->json([
-                'reply' => "Usage: ;project-status [nom du projet]"
+                'reply' => $this->formatMessage([
+                    'type' => 'error',
+                    'content' => "Veuillez spécifier le nom du projet",
+                    'footer' => "Usage : <code>/project-status [nom du projet]</code>"
+                ])
             ]);
         }
 
@@ -441,7 +508,10 @@ Format de réponse JSON:
 
         if (!$project) {
             return response()->json([
-                'reply' => "Projet non trouvé: {$parameters}"
+                'reply' => $this->formatMessage([
+                    'type' => 'error',
+                    'content' => "Projet non trouvé : <strong>" . htmlspecialchars($parameters) . "</strong>"
+                ])
             ]);
         }
 
@@ -450,19 +520,154 @@ Format de réponse JSON:
         $totalTasks = $project->activities->sum(fn($a) => $a->tasks->count());
         $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
 
-        $status = "**📊 Statut du projet: {$project->title}**\n";
-        $status .= "• Statut: {$project->status}\n";
-        $status .= "• Activités: {$activityCount}\n";
-        $status .= "• Tâches terminées: {$completedTasks}/{$totalTasks}\n";
-        $status .= "• Progression: {$progress}%\n";
+        $statusIcon = match($project->status) {
+            'completed' => '✅',
+            'in_progress' => '🔄',
+            'pending' => '⏳',
+            default => '📌'
+        };
 
+        $statusContent = '
+            <div class="ai-project-status">
+                <div class="ai-status-header">
+                    <span class="status-icon">' . $statusIcon . '</span>
+                    <h4>' . htmlspecialchars($project->title) . '</h4>
+                </div>
+                <div class="ai-status-details">
+                    <div class="ai-status-item">
+                        <span class="label">Statut</span>
+                        <span class="value">' . htmlspecialchars($project->status) . '</span>
+                    </div>
+                    <div class="ai-status-item">
+                        <span class="label">Activités</span>
+                        <span class="value">' . $activityCount . '</span>
+                    </div>
+                    <div class="ai-status-item">
+                        <span class="label">Tâches terminées</span>
+                        <span class="value">' . $completedTasks . '/' . $totalTasks . '</span>
+                    </div>
+                    <div class="ai-status-item">
+                        <span class="label">Progression</span>
+                        <span class="value progress">' . $progress . '%</span>
+                    </div>';
+        
         if ($project->due_date) {
-            $status .= "• Échéance: " . \Carbon\Carbon::parse($project->due_date)->format('d/m/Y') . "\n";
+            $statusContent .= '
+                    <div class="ai-status-item">
+                        <span class="label">Échéance</span>
+                        <span class="value">' . \Carbon\Carbon::parse($project->due_date)->format('d/m/Y') . '</span>
+                    </div>';
+        }
+        
+        $statusContent .= '
+                </div>
+            </div>
+        ';
+
+        return response()->json([
+            'reply' => $statusContent,
+            'isFormatted' => true
+        ]);
+    }
+
+    /**
+     * Format message with consistent styling
+     */
+    protected function formatMessage(array $options): string
+    {
+        $type = $options['type'] ?? 'info';
+        $icon = $options['icon'] ?? '';
+        $content = $options['content'] ?? '';
+        $footer = $options['footer'] ?? '';
+
+        $typeClass = 'ai-message-' . $type;
+        
+        $html = '<div class="ai-formatted-message ' . $typeClass . '">';
+        
+        if ($icon) {
+            $html .= '<span class="ai-message-icon">' . $icon . '</span>';
+        }
+        
+        $html .= '<div class="ai-message-text">';
+        $html .= '<div class="ai-message-main">' . $content . '</div>';
+        
+        if ($footer) {
+            $html .= '<div class="ai-message-footer">' . $footer . '</div>';
+        }
+        
+        $html .= '</div></div>';
+        
+        return $html;
+    }
+
+    /**
+     * Check if message is requesting activity creation
+     */
+    protected function isActivityCreationRequest(string $message): bool
+    {
+        $keywords = ['créer une activité', 'crée une activité', 'nouvelle activité', 'ajouter une activité'];
+        $lowerMessage = strtolower($message);
+        
+        foreach ($keywords as $keyword) {
+            if (strpos($lowerMessage, $keyword) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Handle activity creation from natural language
+     */
+    protected function handleActivityCreation(string $message)
+    {
+        $projectId = $this->extractProjectFromMessage($message);
+
+        if (!$projectId) {
+            return response()->json([
+                'reply' => $this->formatMessage([
+                    'type' => 'error',
+                    'content' => "Pour créer une activité, veuillez spécifier le projet.",
+                    'footer' => "Exemple : \"Crée une activité de développement pour le projet Site Web\""
+                ])
+            ]);
+        }
+
+        $project = Project::find($projectId);
+        if (!$project) {
+            return response()->json([
+                'reply' => $this->formatMessage([
+                    'type' => 'error',
+                    'content' => "Projet non trouvé."
+                ])
+            ]);
         }
 
         return response()->json([
-            'reply' => $status
+            'reply' => $this->formatMessage([
+                'type' => 'info',
+                'icon' => '🚧',
+                'content' => "La création d'activités via l'IA sera bientôt disponible !",
+                'footer' => "En attendant, utilisez l'interface de gestion de projets."
+            ])
         ]);
+    }
+
+    /**
+     * Extract project ID from message
+     */
+    protected function extractProjectFromMessage(string $message): ?int
+    {
+        $projects = Project::where('owner_id', auth()->id())->get();
+
+        foreach ($projects as $project) {
+            if (strpos(strtolower($message), strtolower($project->title)) !== false) {
+                return $project->id;
+            }
+        }
+
+        return null;
     }
 
     /**

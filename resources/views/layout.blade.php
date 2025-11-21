@@ -41,7 +41,7 @@
             <button class="mobile-menu-btn" onclick="toggleSidebar()">
                 <i class="fas fa-bars"></i>
             </button>
-            <h2>Gestion de Projets</h2>
+            <h2> LIK-PRO DIGITAL</h2>
         </div>
         <div class="header-right">
             @auth

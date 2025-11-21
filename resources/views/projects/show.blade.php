@@ -192,10 +192,6 @@
                     <a class="btn btn-primary" href="{{ route('activities.create', $project) }}">
                         <i class="fas fa-plus"></i> Créer la première activité
                     </a>
-                    <div class="or-divider">ou</div>
-                    <button class="btn btn-primary btn-ai" onclick="showConfirmationModal()">
-                        <i class="fas fa-robot"></i> Générer avec l'IA
-                    </button>
                     @endif
                 </div>
                 @endif

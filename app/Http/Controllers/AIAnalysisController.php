@@ -90,10 +90,15 @@ class AIAnalysisController extends Controller
                 'error' => $e->getMessage()
             ]);
 
+            // En cas d'erreur, retourner une structure de base
+            $defaultStructure = $this->getDefaultProjectStructure($project->title, $project->description);
+
             return response()->json([
-                'success' => false,
-                'error' => 'Erreur lors de l\'analyse IA: ' . $e->getMessage()
-            ], 500);
+                'success' => true,
+                'analysis' => $defaultStructure,
+                'message' => 'Structure de base générée (analyse IA indisponible)',
+                'warning' => 'L\'analyse IA n\'a pas pu être effectuée. Une structure de base a été utilisée à la place.'
+            ]);
         }
     }
 
@@ -154,5 +159,138 @@ class AIAnalysisController extends Controller
         ];
 
         return $priorityMap[strtolower($priority)] ?? 'medium';
+    }
+
+    /**
+     * Générer une structure de base standard pour le projet
+     * (Utilisée en cas d'erreur de l'analyse IA)
+     */
+    private function getDefaultProjectStructure(string $projectTitle, ?string $projectDescription): array
+    {
+        return [
+            'success' => true,
+            'activities' => [
+                [
+                    'title' => 'Analyse et Conception',
+                    'description' => 'Phase de planification et de conception du projet. Définition des objectifs, des besoins, et de l\'architecture globale.',
+                    'tasks' => [
+                        [
+                            'title' => 'Définir les objectifs du projet',
+                            'description' => 'Clarifier et documenter les objectifs principaux, les livrables attendus, et les critères de succès.',
+                            'priority' => 'high',
+                            'estimated_hours' => 4
+                        ],
+                        [
+                            'title' => 'Analyser les besoins et exigences',
+                            'description' => 'Identifier et documenter tous les besoins fonctionnels et non-fonctionnels du projet.',
+                            'priority' => 'high',
+                            'estimated_hours' => 8
+                        ],
+                        [
+                            'title' => 'Concevoir l\'architecture',
+                            'description' => 'Proposer une architecture et un plan détaillé pour le projet.',
+                            'priority' => 'high',
+                            'estimated_hours' => 6
+                        ],
+                        [
+                            'title' => 'Planifier les ressources',
+                            'description' => 'Identifier les ressources nécessaires (équipe, outils, budget, temps).',
+                            'priority' => 'medium',
+                            'estimated_hours' => 3
+                        ]
+                    ]
+                ],
+                [
+                    'title' => 'Développement et Réalisation',
+                    'description' => 'Phase de réalisation des fonctionnalités et de la mise en œuvre technique du projet.',
+                    'tasks' => [
+                        [
+                            'title' => 'Configurer l\'environnement de développement',
+                            'description' => 'Mettre en place les outils, les environnements, et les dépendances nécessaires.',
+                            'priority' => 'high',
+                            'estimated_hours' => 4
+                        ],
+                        [
+                            'title' => 'Développer les fonctionnalités principales',
+                            'description' => 'Implémenter les fonctionnalités core et les modules principaux du projet.',
+                            'priority' => 'high',
+                            'estimated_hours' => 24
+                        ],
+                        [
+                            'title' => 'Intégrer les modules',
+                            'description' => 'Intégrer les différents modules et composants développés.',
+                            'priority' => 'high',
+                            'estimated_hours' => 8
+                        ],
+                        [
+                            'title' => 'Optimisation et refactoring',
+                            'description' => 'Optimiser le code, améliorer les performances, et nettoyer le code legacy.',
+                            'priority' => 'medium',
+                            'estimated_hours' => 6
+                        ]
+                    ]
+                ],
+                [
+                    'title' => 'Tests et Assurance Qualité',
+                    'description' => 'Phase de validation et de test pour assurer la qualité et la stabilité du projet.',
+                    'tasks' => [
+                        [
+                            'title' => 'Effectuer les tests unitaires',
+                            'description' => 'Créer et exécuter les tests unitaires pour valider les composants individuels.',
+                            'priority' => 'high',
+                            'estimated_hours' => 8
+                        ],
+                        [
+                            'title' => 'Effectuer les tests d\'intégration',
+                            'description' => 'Tester l\'intégration entre les différents modules et composants.',
+                            'priority' => 'high',
+                            'estimated_hours' => 8
+                        ],
+                        [
+                            'title' => 'Effectuer les tests de performance',
+                            'description' => 'Valider les performances, la scalabilité, et la charge du système.',
+                            'priority' => 'medium',
+                            'estimated_hours' => 4
+                        ],
+                        [
+                            'title' => 'Créer la documentation de test',
+                            'description' => 'Documenter les cas de test, les résultats, et les recommandations.',
+                            'priority' => 'medium',
+                            'estimated_hours' => 3
+                        ]
+                    ]
+                ],
+                [
+                    'title' => 'Finalisation et Livraison',
+                    'description' => 'Phase de préparation finale, déploiement, et livraison du projet.',
+                    'tasks' => [
+                        [
+                            'title' => 'Préparer la documentation utilisateur',
+                            'description' => 'Rédiger les guides d\'utilisation, les manuels, et la documentation pour les utilisateurs finaux.',
+                            'priority' => 'medium',
+                            'estimated_hours' => 6
+                        ],
+                        [
+                            'title' => 'Préparer le déploiement',
+                            'description' => 'Configurer l\'environnement de production et préparer le plan de déploiement.',
+                            'priority' => 'high',
+                            'estimated_hours' => 4
+                        ],
+                        [
+                            'title' => 'Livrer et déployer',
+                            'description' => 'Effectuer le déploiement en production et assurer la transition en douceur.',
+                            'priority' => 'high',
+                            'estimated_hours' => 3
+                        ],
+                        [
+                            'title' => 'Recettes finales et validation',
+                            'description' => 'Effectuer les recettes avec les stakeholders et valider la conformité.',
+                            'priority' => 'medium',
+                            'estimated_hours' => 4
+                        ]
+                    ]
+                ]
+            ]
+        ];
     }
 }
