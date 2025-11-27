@@ -85,7 +85,11 @@ Route::middleware('auth')->group(function () {
 
     // IA - Analyse de projet avec Gemini
     Route::post('/projects/{project}/analyze', [AIAnalysisController::class, 'analyze'])
-        ->name('projects.analyze')->middleware('manager.only');
+        ->name('projects.analyze');
+
+    // IA - Recommandations et ajustements pour un projet
+    Route::post('/projects/{project}/recommendations', [AIAnalysisController::class, 'recommendAdjustments'])
+        ->name('projects.recommendations');
 
     // IA - Chat avec Gemini
     Route::post('/api/ai/chat/handle-message', [ChatController::class, 'handleMessage'])

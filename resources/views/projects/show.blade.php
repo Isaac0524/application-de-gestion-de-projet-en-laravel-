@@ -23,10 +23,12 @@
             <a class="btn btn-secondary" href="{{ route('projects.edit', $project) }}">
                 <i class="fas fa-edit"></i> Modifier
             </a>
-            <button id="analyze-btn" class="btn btn-primary btn-ai" onclick="showConfirmationModal()">
-                <i class="fas fa-robot"></i>
-                <span id="analyze-btn-text">Analyser avec Gemini AI</span>
+            <button id="analyze-btn" class="btn btn-primary" onclick="showConfirmationModal()">
+                <span id="analyze-btn-text">Analyser </span>
             </button>
+                <button id="recommend-btn" class="btn btn-warning" onclick="startRecommendations()">
+                    <span id="recommend-btn-text">Recommandations & Ajustements</span>
+                </button>
         </div>
         @endif
     </div>
@@ -270,6 +272,29 @@
         </div>
     </div>
     @endif
+</div>
+
+<!-- Modal de recommandations -->
+<div id="recommendation-modal" class="ai-modal hidden">
+    <div class="ai-modal-overlay" onclick="closeRecommendationModal()"></div>
+    <div class="ai-modal-content">
+        <div class="ai-modal-header">
+            <h2><i class="fas fa-lightbulb text-warning"></i> Recommandations & Ajustements</h2>
+            <button onclick="closeRecommendationModal()" class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="ai-modal-body" id="recommendation-body">
+            <div class="loading-container" id="recommendation-loading">
+                <div class="loading-spinner"></div>
+                <h3>Génération des recommandations...</h3>
+            </div>
+            <div id="recommendation-content" style="display:none; white-space: pre-wrap; max-height: 60vh; overflow:auto;"></div>
+        </div>
+        <div class="ai-modal-footer">
+            <button onclick="closeRecommendationModal()" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Fermer
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Modal de confirmation -->
@@ -677,6 +702,16 @@
     background: var(--gray-300);
 }
 
+.btn-warning {
+    background: var(--warning);
+    color: white;
+}
+
+.btn-warning:hover {
+    filter: brightness(0.95);
+    transform: translateY(-1px);
+}
+
 .btn-sm {
     padding: 6px 10px;
     font-size: 12px;
@@ -729,11 +764,6 @@
 .badge-pending, .badge-open {
     background: #fef3c7;
     color: #92400e;
-}
-
-.badge-archived {
-    background: var(--gray-200);
-    color: var(--gray-600);
 }
 
 .link {
@@ -1423,6 +1453,66 @@ function updateActivityTitle(activityIndex, value) {
     if (generatedActivities[activityIndex]) {
         generatedActivities[activityIndex].title = value;
     }
+}
+
+// Recommendations flow (global functions)
+async function startRecommendations() {
+    const btn = document.getElementById('recommend-btn');
+    if (!btn) return;
+    const originalTextEl = document.getElementById('recommend-btn-text');
+    const originalText = originalTextEl ? originalTextEl.innerText : '';
+    btn.disabled = true;
+    if (originalTextEl) originalTextEl.innerText = 'Génération...';
+    openRecommendationModal();
+
+    try {
+        const res = await fetch("{{ route('projects.recommendations', $project) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({})
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('recommendation-loading').style.display = 'none';
+            const content = document.getElementById('recommendation-content');
+            content.style.display = 'block';
+            content.innerText = data.recommendations || 'Aucune recommandation reçue.';
+        } else {
+            document.getElementById('recommendation-loading').style.display = 'none';
+            document.getElementById('recommendation-content').style.display = 'block';
+            document.getElementById('recommendation-content').innerText = 'Erreur: ' + (data.error || 'Erreur inconnue');
+        }
+    } catch (err) {
+        document.getElementById('recommendation-loading').style.display = 'none';
+        document.getElementById('recommendation-content').style.display = 'block';
+        document.getElementById('recommendation-content').innerText = 'Erreur lors de la requête: ' + err.message;
+    } finally {
+        btn.disabled = false;
+        if (originalTextEl) originalTextEl.innerText = originalText;
+    }
+}
+
+function openRecommendationModal() {
+    const modal = document.getElementById('recommendation-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    const loading = document.getElementById('recommendation-loading');
+    const content = document.getElementById('recommendation-content');
+    if (loading) loading.style.display = 'block';
+    if (content) {
+        content.style.display = 'none';
+        content.innerText = '';
+    }
+}
+
+function closeRecommendationModal() {
+    const modal = document.getElementById('recommendation-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
 }
 
 function updateActivityDescription(activityIndex, value) {

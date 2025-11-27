@@ -339,4 +339,99 @@ RÉPONDS UNIQUEMENT AVEC CE FORMAT JSON (aucun texte avant ou après) :
             ];
         }
     }
+
+    /**
+     * Request recommendations / adjustments for a project from Gemini
+     * Returns raw text (recommendations) or throws Exception on error
+     */
+    public function recommendAdjustments(array $projectPayload): string
+    {
+        try {
+            Log::info('🚀 Requesting Gemini recommendations', [
+                'title' => $projectPayload['title'] ?? 'n/a'
+            ]);
+
+            $prompt = $this->buildRecommendationPrompt($projectPayload);
+
+            $endpoint = "{$this->baseUrl}/gemini-2.5-flash:generateContent?key={$this->apiKey}";
+
+            $response = Http::withoutVerifying()
+                ->timeout(120)
+                ->post($endpoint, [
+                    'contents' => [
+                        [
+                            'parts' => [ ['text' => $prompt] ]
+                        ]
+                    ],
+                    'generationConfig' => [
+                        'temperature' => 0.6,
+                        'topK' => 40,
+                        'topP' => 0.9,
+                        'maxOutputTokens' => 2048,
+                        'responseMimeType' => 'text/plain'
+                    ]
+                ]);
+
+            if (!$response->successful()) {
+                Log::error('❌ Gemini recommendations API Error', ['status' => $response->status(), 'body' => $response->body()]);
+                throw new Exception('Erreur API Gemini: ' . $response->body());
+            }
+
+            $data = $response->json();
+
+            // Try to read textual response
+            $textResponse = null;
+            if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
+                $textResponse = $data['candidates'][0]['content']['parts'][0]['text'];
+            } elseif (isset($data['candidates'][0]['output'])) {
+                $textResponse = json_encode($data['candidates'][0]['output']);
+            } else {
+                $textResponse = $response->body();
+            }
+
+            Log::info('📝 Gemini recommendations response length', ['length' => strlen($textResponse)]);
+
+            return trim($textResponse);
+
+        } catch (Exception $e) {
+            Log::error('❌ GeminiService::recommendAdjustments error', ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Build prompt asking Gemini for recommendations and adjustments
+     */
+    private function buildRecommendationPrompt(array $p): string
+    {
+        $title = $p['title'] ?? 'Untitled project';
+        $description = $p['description'] ?? 'Aucune description fournie';
+        $start = $p['start_date'] ?? 'non spécifiée';
+        $end = $p['due_date'] ?? 'non spécifiée';
+        $status = $p['status'] ?? 'unknown';
+        $progress = $p['progress'] ?? 0;
+
+        $prompt = "Tu es un expert en gestion de projet. Donne des recommandations pratiques et des ajustements pour améliorer ce projet. " .
+            "Fournis une liste priorisée de recommandations, risques potentiels, tâches critiques à ajouter, réajustements de planning, et suggestions d\'allocation de ressources. " .
+            "Retourne une structure claire en sections : Résumé, Recommandations (priorisées), Risques, Changements de planning suggérés, Ressources / Rôles, Actions immédiates (3 premières).\n\n";
+
+        $prompt .= "PROJET:\nTitre: {$title}\nDescription: {$description}\nDate de début: {$start}\nDate de fin: {$end}\nStatut: {$status}\nProgression: {$progress}%\n\n";
+
+        if (!empty($p['activities']) && is_array($p['activities'])) {
+            $prompt .= "ACTIVITÉS ET TÂCHES (état actuel):\n";
+            foreach ($p['activities'] as $ai => $activity) {
+                $prompt .= "- Activité: " . ($activity['title'] ?? 'N/A') . " (" . ($activity['status'] ?? 'n/a') . ")\n";
+                if (!empty($activity['tasks'])) {
+                    foreach ($activity['tasks'] as $ti => $task) {
+                        $prompt .= "   * Tâche: " . ($task['title'] ?? 'N/A') . " - Statut: " . ($task['status'] ?? 'n/a') . " - Assignees: " . (implode(', ', $task['assignees'] ?? []) ?: 'aucun') . "\n";
+                    }
+                }
+                $prompt .= "\n";
+            }
+        }
+
+        $prompt .= "INSTRUCTIONS:\n1) Fournis recommandations courtes et actionnables, priorisé par importance.\n2) Inclut 3 actions immédiates avec estimations en heures.\n3) Indique les changements de planning si nécessaire (dates).\n4) Mentionne les risques et mitigation.\n5) Rends la réponse lisible et structurée.\n\nRéponds en texte structuré (markdown ou plaintext).";
+
+        return $prompt;
+    }
 }

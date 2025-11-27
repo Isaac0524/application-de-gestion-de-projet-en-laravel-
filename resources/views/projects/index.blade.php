@@ -423,8 +423,6 @@
                                     EN ATTENTE
                                 @elseif ($project->status === 'completed')
                                     TERMINÉ
-                                @elseif ($project->status === 'archived')
-                                    ARCHIVÉ
                                 @else
                                     {{ strtoupper($project->status) }}
                                 @endif

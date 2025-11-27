@@ -27,11 +27,6 @@ class AIAnalysisController extends Controller
      */
     public function analyze(Request $request, Project $project)
     {
-        // Vérifier que l'utilisateur est le propriétaire du projet
-        if ($project->owner_id !== $request->user()->id) {
-            abort(403, 'Accès interdit : vous devez être le propriétaire du projet.');
-        }
-
         try {
             // Si des activités sont fournies, les créer directement
             if ($request->has('activities') && is_array($request->activities)) {
@@ -99,6 +94,79 @@ class AIAnalysisController extends Controller
                 'message' => 'Structure de base générée (analyse IA indisponible)',
                 'warning' => 'L\'analyse IA n\'a pas pu être effectuée. Une structure de base a été utilisée à la place.'
             ]);
+        }
+    }
+
+    /**
+     * Demander des recommandations et ajustements pour un projet
+     */
+    public function recommendAdjustments(Request $request, Project $project)
+    {
+        try {
+            // Construire le payload du projet (informations complètes)
+            $project->load('activities.tasks.assignees', 'team.users');
+
+            $activities = [];
+            foreach ($project->activities as $activity) {
+                $tasks = [];
+                foreach ($activity->tasks as $task) {
+                    $tasks[] = [
+                        'title' => $task->title,
+                        'description' => $task->description,
+                        'status' => $task->status,
+                        'priority' => $task->priority,
+                        'estimated_hours' => $task->estimated_hours,
+                        'assignees' => $task->assignees->pluck('name')->toArray()
+                    ];
+                }
+
+                $activities[] = [
+                    'title' => $activity->title,
+                    'description' => $activity->description,
+                    'status' => $activity->status,
+                    'tasks' => $tasks
+                ];
+            }
+
+            $totalTasks = $project->activities->sum(fn($a) => $a->tasks->count());
+            $completedTasks = $project->activities->sum(fn($a) => $a->tasks->whereIn('status', ['completed', 'finalized'])->count());
+            $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+
+            $teamMembers = [];
+            if ($project->team) {
+                $teamMembers = $project->team->users->pluck('name')->toArray();
+            }
+
+            $payload = [
+                'title' => $project->title,
+                'description' => $project->description,
+                'start_date' => $project->start_date,
+                'due_date' => $project->due_date,
+                'status' => $project->status,
+                'progress' => $progress,
+                'owner' => $project->owner->name ?? null,
+                'team_members' => $teamMembers,
+                'activities' => $activities
+            ];
+
+            // Appeler GeminiService pour obtenir les recommandations
+            $recommendations = $this->geminiService->recommendAdjustments($payload);
+
+            return response()->json([
+                'success' => true,
+                'recommendations' => $recommendations
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Erreur lors de la demande de recommandations', [
+                'project_id' => $project->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Erreur lors de la génération des recommandations: ' . $e->getMessage()
+            ], 500);
         }
     }
 

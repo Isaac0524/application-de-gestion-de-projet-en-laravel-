@@ -431,7 +431,6 @@
 .badge-completed_by_assignee { background: #fed7aa; color: #9a3412; }
 .badge-completed { background: #d1fae5; color: #065f46; }
 .badge-finalized { background: #d1fae5; color: #065f46; }
-.badge-archived { background: var(--gray-200); color: var(--gray-600); }
 
 /* Link Component */
 .link {

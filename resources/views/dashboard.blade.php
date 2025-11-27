@@ -263,21 +263,6 @@
                             @endforeach
                         </div>
                     </div>
-
-                    <div class="kanban-column">
-                        <div class="kanban-header archived">
-                            <h4>Archivés</h4>
-                            <span class="count">{{ count($projectsKanban['archived']) }}</span>
-                        </div>
-                        <div class="kanban-items">
-                            @foreach($projectsKanban['archived'] as $project)
-                                <div class="kanban-item">
-                                    <h5><a href="{{ route('projects.show', $project) }}">{{ $project->title }}</a></h5>
-                                    <p class="project-owner"><i class="fas fa-user"></i> {{ $project->owner->name }}</p>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -423,15 +408,14 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(projectsCtx, {
         type: 'doughnut',
         data: {
-            labels: ['en attente ','En cours', 'Terminés', 'Archivés'],
+            labels: ['en attente ','En cours', 'Terminés'],
             datasets: [{
                 data: [
                     {{ $stats['projects_by_status']['pending'] ?? 0 }},
                     {{ $stats['projects_by_status']['in_progress'] ?? 0 }},
                     {{ $stats['projects_by_status']['completed'] ?? 0 }},
-                    {{ $stats['projects_by_status']['archived'] ?? 0 }}
                 ],
-                backgroundColor: ['#f0a910','#3b82f6', '#10b981', '#6b7280'],
+                backgroundColor: ['#f0a910','#3b82f6', '#10b981'],
                 borderWidth: 0
             }]
         },
@@ -671,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .kanban-board {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1px;
     background: var(--gray-200);
     min-height: 400px;
@@ -710,7 +694,6 @@ document.addEventListener('DOMContentLoaded', function() {
 .kanban-header.pending { background: var(--warning-color); color: white; }
 .kanban-header.in-progress { background: var(--primary-color); color: white; }
 .kanban-header.completed { background: var(--success-color); color: white; }
-.kanban-header.archived { background: var(--gray-500); color: white; }
 
 .kanban-items {
     flex: 1;
@@ -793,7 +776,6 @@ document.addEventListener('DOMContentLoaded', function() {
 .badge-pending { background: #fef3c7; color: #f0a910; }
 .badge-in_progress { background: #dbeafe; color: #1e40af; }
 .badge-completed { background: #d1fae5; color: #065f46; }
-.badge-archived { background: var(--gray-200); color: var(--gray-600); }
 .badge-warning { background: #fef3c7; color: #92400e; }
 
 /* Button Component */

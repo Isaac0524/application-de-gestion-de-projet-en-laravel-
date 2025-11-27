@@ -152,7 +152,7 @@ textarea {
                 <div>
                     <label>Statut</label>
                     <select name="status" required>
-                        @foreach(['pending'=>'En attente','in_progress'=>'En cours','archived'=>'Archivé'] as $k=>$v)
+                        @foreach(['pending'=>'En attente','in_progress'=>'En cours'] as $k=>$v)
                             <option value="{{ $k }}" @selected($project->status===$k)>{{ $v }}</option>
                         @endforeach
                     </select>

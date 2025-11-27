@@ -86,7 +86,6 @@ class DashboardController extends Controller
                 'pending' => Project::with('owner')->where('status', 'pending')->latest()->get(),
                 'in_progress' => Project::with('owner')->where('status', 'in_progress')->latest()->get(),
                 'completed' => Project::with('owner')->where('status', 'completed')->latest()->get(),
-                'archived' => Project::with('owner')->where('status', 'archived')->latest()->get(),
             ];
 
             // Activités récentes
